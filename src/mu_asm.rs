@@ -37,12 +37,44 @@ pub mod assembler {
         inst.text = s.clone();
         inst.mnemonic = words.get(0).unwrap().clone();
         inst.rd = words.get(1).unwrap().clone();
+
+        match words.get(2) {
+            Some(s) => {
+                if s.starts_with("0x") {
+                    inst.imm = s.clone();
+                } else if u32::from_str_radix(s.as_str(), 10).is_ok() {
+                    inst.imm = s.clone();
+                } else {
+                    inst.rs1 = s.clone();
+                }
+            }
+            None => {
+                inst.rs1 = "".to_string().clone();
+            }
+        };
+
+        match words.get(3) {
+            Some(s) => {
+                if s.starts_with("0x") {
+                    inst.imm = s.clone();
+                } else if u32::from_str_radix(s.as_str(), 10).is_ok() {
+                    inst.imm = s.clone();
+                } else {
+                    inst.rs2 = s.clone();
+                }
+            }
+            None => {
+                inst.rs2 = "".to_string().clone();
+            }
+        };
+
+        inst
     }
 
     pub fn assemble(lines: &Vec<String>) {
         let mut addr_counter: u32 = 0;
         let mut label_table: Vec<LabelDescriptor> = Vec::new();
-        let mut instruction_table: Vec<InstructionDescriptor> = Vec::new();
+        let mut inst_table: Vec<InstructionDescriptor> = Vec::new();
         let mut lines = lines.clone();
 
         lines = remove_comments(&lines);
@@ -58,13 +90,19 @@ pub mod assembler {
                 let mut inst: InstructionDescriptor = parse_instruction(&line);
                 inst.address = addr_counter;
                 addr_counter += 8;
-                instruction_table.push(inst);
+                inst_table.push(inst);
             }
         }
 
-        println!("{:?}", label_table);
+        for label in label_table {
+            println!("{:?}", label);
+        }
+
         println!("\n");
-        println!("{:?}", instruction_table);
+
+        for inst in inst_table {
+            println!("{:?}", inst);
+        }
 
         // let mut instructions: Vec<Instruction> =
         // lines.iter().map(|line| Instruction::new(line)).collect();
