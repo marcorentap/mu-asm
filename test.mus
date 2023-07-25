@@ -1,0 +1,19 @@
+LD RD RS ;Memory access, RD = *RS
+ST RD RS ;Memory access RD = *RS
+
+@label
+ADD RD RS1 RS2
+SUB RD RS1 RS2
+MULT RD RS1 RS2
+DIV RD RS1 RS2
+
+; spaces are fine
+ADD RD RS1 IMM
+SUB RD RS1 IMM
+MULT RD RS1 IMM
+DIV RD RS1 IMM
+
+SET RD 0x400000
+
+[7]       [10] [5]  [5]  [5]  [32]
+instgroup inst dest src1 src2 imm
