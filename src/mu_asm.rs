@@ -4,9 +4,9 @@ pub mod assembler {
         text: String,
         address: u32,
         mnemonic: String,
-        rd: String,
-        rs1: String,
-        rs2: String,
+        field1: String,
+        field2: String,
+        field3: String,
         imm: String,
     }
 
@@ -16,9 +16,9 @@ pub mod assembler {
                 text: "".to_string(),
                 address: 0,
                 mnemonic: "".to_string(),
-                rd: "".to_string(),
-                rs1: "".to_string(),
-                rs2: "".to_string(),
+                field1: "".to_string(),
+                field2: "".to_string(),
+                field3: "".to_string(),
                 imm: "".to_string(),
             }
         }
@@ -33,41 +33,13 @@ pub mod assembler {
     fn parse_instruction(s: &String) -> InstructionDescriptor {
         let mut inst = InstructionDescriptor::new();
         let words: Vec<String> = s.split_whitespace().map(|word| word.to_string()).collect();
+        let default_field: String = "".to_string();
 
         inst.text = s.clone();
         inst.mnemonic = words.get(0).unwrap().clone();
-        inst.rd = words.get(1).unwrap().clone();
-
-        match words.get(2) {
-            Some(s) => {
-                if s.starts_with("0x") {
-                    inst.imm = s.clone();
-                } else if u32::from_str_radix(s.as_str(), 10).is_ok() {
-                    inst.imm = s.clone();
-                } else {
-                    inst.rs1 = s.clone();
-                }
-            }
-            None => {
-                inst.rs1 = "".to_string().clone();
-            }
-        };
-
-        match words.get(3) {
-            Some(s) => {
-                if s.starts_with("0x") {
-                    inst.imm = s.clone();
-                } else if u32::from_str_radix(s.as_str(), 10).is_ok() {
-                    inst.imm = s.clone();
-                } else {
-                    inst.rs2 = s.clone();
-                }
-            }
-            None => {
-                inst.rs2 = "".to_string().clone();
-            }
-        };
-
+        inst.field1 = words.get(1).unwrap_or(&default_field).clone();
+        inst.field2 = words.get(2).unwrap_or(&default_field).clone();
+        inst.field3 = words.get(3).unwrap_or(&default_field).clone();
         inst
     }
 
