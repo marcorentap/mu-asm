@@ -23,9 +23,9 @@ struct Cli {
 
 fn main() -> io::Result<()> {
     let cli = Cli::parse();
-    let mu_asm = MuAsm::new();
+    let mut mu_asm = MuAsm::new();
 
-    let reader: Box<dyn BufRead> = match cli.input_file {
+    let mut reader: Box<dyn BufRead> = match cli.input_file {
         Some(input_file) => {
             let file = File::open(input_file)?;
             Box::new(BufReader::new(file))
@@ -33,7 +33,7 @@ fn main() -> io::Result<()> {
         None => Box::new(BufReader::new(io::stdin())),
     };
 
-    let writer: Box<dyn Write> = match cli.output_file {
+    let mut writer: Box<dyn Write> = match cli.output_file {
         Some(output_file) => {
             let file = File::open(output_file)?;
             Box::new(BufWriter::new(file))
@@ -42,9 +42,9 @@ fn main() -> io::Result<()> {
     };
 
     if cli.disassemble {
-        mu_asm.disassemble(&reader, &writer);
+        mu_asm.disassemble(&mut reader, &mut writer);
     } else {
-        mu_asm.disassemble(&reader, &writer);
+        mu_asm.assemble(&mut reader, &mut writer);
     }
 
     Ok(())

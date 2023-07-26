@@ -1,98 +1,119 @@
-#[derive(Debug)]
-struct InstructionDescriptor {
-    text: String,
-    address: u32,
-    mnemonic: String,
-    field1: String,
-    field2: String,
-    field3: String,
-    imm: String,
-}
+use crate::mu_asm::{InstructionDescriptor, LabelDescriptor, MuAsm};
+use std::io::Error;
+use std::io::{BufRead, Write};
 
-impl InstructionDescriptor {
-    fn new() -> Self {
-        InstructionDescriptor {
-            text: "".to_string(),
-            address: 0,
-            mnemonic: "".to_string(),
-            field1: "".to_string(),
-            field2: "".to_string(),
-            field3: "".to_string(),
-            imm: "".to_string(),
+use super::FieldKind;
+use super::REG_NAMES;
+
+impl MuAsm {
+    pub fn assemble(&mut self, reader: &mut Box<dyn BufRead>, writer: &mut Box<dyn Write>) {
+        let addr_counter = 0;
+
+        let lines: Vec<String> = reader
+            .lines()
+            .into_iter()
+            .map(|line| line.unwrap().to_owned())
+            .collect();
+
+        // Build symbol table
+        for line in &lines {
+            let mut line = line.trim();
+
+            // Remove comments
+            line = match line.split_once(';') {
+                Some(pair) => pair.0,
+                None => line,
+            };
+
+            // Skip empty line
+            if line.is_empty() {
+                continue;
+            }
+
+            // Define symbols
+            if line.starts_with("@") {
+                self.symbol_map.insert(line.to_string(), addr_counter);
+                continue;
+            }
+
+            let inst = self.parse_instruction(line);
+            self.inst_table.push(inst);
         }
-    }
-}
 
-#[derive(Debug)]
-struct LabelDescriptor {
-    address: u32,
-    name: String,
-}
-
-fn parse_instruction(s: &String) -> InstructionDescriptor {
-    let mut inst = InstructionDescriptor::new();
-    let words: Vec<String> = s.split_whitespace().map(|word| word.to_string()).collect();
-    let default_field: String = "".to_string();
-
-    inst.text = s.clone();
-    inst.mnemonic = words.get(0).unwrap().clone();
-    inst.field1 = words.get(1).unwrap_or(&default_field).clone();
-    inst.field2 = words.get(2).unwrap_or(&default_field).clone();
-    inst.field3 = words.get(3).unwrap_or(&default_field).clone();
-    inst
-}
-
-pub fn assemble(lines: &Vec<String>) -> Vec<u8> {
-    let mut addr_counter: u32 = 0;
-    let mut label_table: Vec<LabelDescriptor> = Vec::new();
-    let mut inst_table: Vec<InstructionDescriptor> = Vec::new();
-    let mut lines = lines.clone();
-
-    lines = remove_comments(&lines);
-    lines = remove_empty_lines(&lines);
-
-    for line in &lines {
-        if line.starts_with('@') {
-            label_table.push(LabelDescriptor {
-                address: addr_counter,
-                name: line.clone(),
-            })
-        } else {
-            let mut inst: InstructionDescriptor = parse_instruction(&line);
-            inst.address = addr_counter;
-            addr_counter += 8;
-            inst_table.push(inst);
+        for inst in &self.inst_table {
+            let code: u64 = self.assemble_instruction(&inst).unwrap();
+            writer.write_all(&code.to_le_bytes()).unwrap();
         }
     }
 
-    for label in label_table {
-        println!("{:?}", label);
+    fn encode_field(&self, field: &str) -> FieldKind {
+        if field.starts_with("@") {
+            return FieldKind::IMM(self.symbol_map.get(field).unwrap().to_owned());
+        }
+
+        if field.starts_with("0x") {
+            let num = u32::from_str_radix(&field[2..], 16);
+            if num.is_ok() {
+                return FieldKind::IMM(num.unwrap() as u32);
+            }
+        }
+
+        let num = u32::from_str_radix(&field, 10);
+        if num.is_ok() {
+            return FieldKind::IMM(num.unwrap() as u32);
+        }
+        let reg = 0x9;
+        // let reg = REG_NAMES.iter().position(|name| name == &field).unwrap() as u8;
+        FieldKind::REG(reg)
     }
 
-    println!("\n");
+    pub fn assemble_instruction(&self, inst: &InstructionDescriptor) -> Result<u64, Error> {
+        let isa_entry = self.isa_map.get(inst.mnemonic.as_str()).unwrap();
+        let mut code: u64 = 0x00;
+        let fields: u8 = isa_entry.1;
+        let opcode_group = isa_entry.2;
+        let opcode = isa_entry.3;
 
-    for inst in inst_table {
-        println!("{:?}", inst);
+        let mut rd: u8 = 0;
+        let mut rs1: u8 = 0;
+        let mut rs2: u8 = 0;
+        let mut imm: u32 = 0;
+
+        match self.encode_field(&inst.field1) {
+            FieldKind::REG(reg) => {
+                rd = reg;
+            }
+            FieldKind::IMM(num) => {
+                imm = num;
+            }
+        }
+
+        match self.encode_field(&inst.field2) {
+            FieldKind::IMM(num) => {
+                imm = num;
+            }
+            FieldKind::REG(num) => {
+                rs1 = num;
+            }
+        }
+
+        match self.encode_field(&inst.field3) {
+            FieldKind::IMM(num) => {
+                imm = num;
+            }
+            FieldKind::REG(num) => {
+                rs2 = num;
+            }
+        }
+
+        code += imm as u64;
+        code += (rs2 as u64) << 32;
+        code += (rs1 as u64) << 37;
+        code += (rd as u64) << 42;
+        code += (opcode as u64) << 47;
+        code += (opcode_group as u64) << 57;
+        code += (fields as u64) << 61;
+
+        Ok(code)
     }
-
-    // let mut instructions: Vec<Instruction> =
-    // lines.iter().map(|line| Instruction::new(line)).collect();
-}
-
-fn remove_empty_lines(lines: &Vec<String>) -> Vec<String> {
-    lines
-        .into_iter()
-        .filter(|line| !line.is_empty())
-        .map(|line| line.trim().to_string())
-        .collect()
-}
-
-fn remove_comments(lines: &Vec<String>) -> Vec<String> {
-    lines
-        .into_iter()
-        .map(|line| match line.split_once(';') {
-            Some(pair) => pair.0.to_string(),
-            None => line.to_string(),
-        })
-        .collect()
 }
