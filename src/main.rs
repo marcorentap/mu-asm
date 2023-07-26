@@ -1,6 +1,6 @@
 mod mu_asm;
 
-use mu_asm::assembler::assemble;
+use mu_asm::MuAsm;
 use std::io;
 use std::io::BufRead;
 
@@ -12,5 +12,6 @@ fn main() {
         .map(|line| line.unwrap())
         .collect();
 
-    let bytes = assemble(&lines);
+    let mu_asm = MuAsm::new();
+    mu_asm.assemble(&lines);
 }
