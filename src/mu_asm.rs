@@ -10,6 +10,12 @@ impl MuAsm {
     }
 
     pub fn assemble(&self, lines: &Vec<String>) {
+        println!("Assembling");
         assembler::assemble(lines);
+    }
+
+    pub fn disassemble(&self, lines: &Vec<String>) {
+        println!("Disassemble");
+        // assembler::assemble(lines);
     }
 }
