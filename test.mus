@@ -1,19 +1,31 @@
-LD RD RS ;Memory access, RD = *RS
-ST RD RS ;Memory access RD = *RS
+; Memory access, numbers are number of bytes
+; LD = LD4
 
-@label
-ADD RD RS1 RS2
-SUB RD RS1 RS2
-MULT RD RS1 RS2
-DIV RD RS1 RS2
+SET R1 0x03
+SET R2 0x04
+SET R0 RIP
+CALL @Function1 ; Call function1(3, 4)
+J @exit
 
-; spaces are fine
-ADD RD RS1 IMM
-SUB RD RS1 IMM
-MULT RD RS1 IMM
-DIV RD RS1 IMM
+@Function1
+; use R0 as return, R1 as arg1, R2 as arg2 and they are caller-saved registers
+; Store t as stack variable
 
-SET RD 0x400000
+; i32 function1(i32 x, i32 y)
+;   let i32 t = 0x0000c0de
+;   return x*t + y
 
-[7]       [10] [5]  [5]  [5]  [32]
-instgroup inst dest src1 src2 imm
+; Store t
+SUB RSP 0x04
+ST4 RSP 0x0000c0de
+
+; Calculate x*t + y
+LD4 R0 RSP
+MULT R0 R1
+ADD R0 R2
+ADD RSP 0x04
+RET
+; Function 1 end
+
+@exit
+HALT
