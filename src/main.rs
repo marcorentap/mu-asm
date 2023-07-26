@@ -4,7 +4,7 @@ use clap::Parser;
 use mu_asm::MuAsm;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
 #[derive(Parser)]
 struct Cli {
@@ -25,41 +25,27 @@ fn main() -> io::Result<()> {
     let cli = Cli::parse();
     let mu_asm = MuAsm::new();
 
-    let lines: Vec<String> = match cli.input_file {
+    let reader: Box<dyn BufRead> = match cli.input_file {
         Some(input_file) => {
             let file = File::open(input_file)?;
-            let reader = BufReader::new(file);
-            reader
-                .lines()
-                .into_iter()
-                .map(|line| line.unwrap())
-                .collect()
+            Box::new(BufReader::new(file))
         }
-        None => {
-            let handle = io::stdin().lock();
-            handle
-                .lines()
-                .into_iter()
-                .map(|line| line.unwrap())
-                .collect()
+        None => Box::new(BufReader::new(io::stdin())),
+    };
+
+    let writer: Box<dyn Write> = match cli.output_file {
+        Some(output_file) => {
+            let file = File::open(output_file)?;
+            Box::new(BufWriter::new(file))
         }
+        None => Box::new(BufWriter::new(io::stdout())),
     };
 
     if cli.disassemble {
-        mu_asm.disassemble(&lines);
+        mu_asm.disassemble(&reader, &writer);
     } else {
-        mu_asm.assemble(&lines);
+        mu_asm.disassemble(&reader, &writer);
     }
-
-    // let handle = io::stdin().lock();
-    // let lines: Vec<String> = handle
-    //     .lines()
-    //     .into_iter()
-    //     .map(|line| line.unwrap())
-    //     .collect();
-
-    // let mu_asm = MuAsm::new();
-    // mu_asm.assemble(&lines);
 
     Ok(())
 }

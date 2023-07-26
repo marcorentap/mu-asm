@@ -1,3 +1,6 @@
+use std::io::BufRead;
+use std::io::Write;
+
 mod assembler;
 mod disassembler;
 
@@ -9,13 +12,18 @@ impl MuAsm {
         return MuAsm {};
     }
 
-    pub fn assemble(&self, lines: &Vec<String>) {
+    pub fn assemble(&self, reader: &Box<dyn BufRead>, writer: &Box<dyn Write>) -> Vec<u8> {
         println!("Assembling");
-        assembler::assemble(lines);
+        let lines: Vec<String> = reader
+            .lines()
+            .into_iter()
+            .map(|line| line.unwrap())
+            .collect();
+        assembler::assemble(&lines)
     }
 
-    pub fn disassemble(&self, lines: &Vec<String>) {
+    pub fn disassemble(&self, reader: &Box<dyn BufRead>, writer: &Box<dyn Write>) -> Vec<String> {
         println!("Disassemble");
-        // assembler::assemble(lines);
+        ["abc".to_string()].to_vec()
     }
 }

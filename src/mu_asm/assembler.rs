@@ -42,7 +42,7 @@ fn parse_instruction(s: &String) -> InstructionDescriptor {
     inst
 }
 
-pub fn assemble(lines: &Vec<String>) {
+pub fn assemble(lines: &Vec<String>) -> Vec<u8> {
     let mut addr_counter: u32 = 0;
     let mut label_table: Vec<LabelDescriptor> = Vec::new();
     let mut inst_table: Vec<InstructionDescriptor> = Vec::new();
