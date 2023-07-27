@@ -3,6 +3,7 @@ mod mu_asm;
 use clap::Parser;
 use mu_asm::MuAsm;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
@@ -35,7 +36,10 @@ fn main() -> io::Result<()> {
 
     let mut writer: Box<dyn Write> = match cli.output_file {
         Some(output_file) => {
-            let file = File::open(output_file)?;
+            let file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(output_file)?;
             Box::new(BufWriter::new(file))
         }
         None => Box::new(BufWriter::new(io::stdout())),
