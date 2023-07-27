@@ -62,8 +62,8 @@ impl MuAsm {
         if num.is_ok() {
             return FieldKind::IMM(num.unwrap() as u32);
         }
-        let reg = 0x9;
-        // let reg = REG_NAMES.iter().position(|name| name == &field).unwrap() as u8;
+
+        let reg = REG_NAMES.iter().position(|name| name == &field).unwrap() as u8;
         FieldKind::REG(reg)
     }
 
@@ -79,30 +79,36 @@ impl MuAsm {
         let mut rs2: u8 = 0;
         let mut imm: u32 = 0;
 
-        match self.encode_field(&inst.field1) {
-            FieldKind::REG(reg) => {
-                rd = reg;
-            }
-            FieldKind::IMM(num) => {
-                imm = num;
-            }
-        }
-
-        match self.encode_field(&inst.field2) {
-            FieldKind::IMM(num) => {
-                imm = num;
-            }
-            FieldKind::REG(num) => {
-                rs1 = num;
+        if inst.field1 != "" {
+            match self.encode_field(&inst.field1) {
+                FieldKind::REG(reg) => {
+                    rd = reg;
+                }
+                FieldKind::IMM(num) => {
+                    imm = num;
+                }
             }
         }
 
-        match self.encode_field(&inst.field3) {
-            FieldKind::IMM(num) => {
-                imm = num;
+        if inst.field2 != "" {
+            match self.encode_field(&inst.field2) {
+                FieldKind::IMM(num) => {
+                    imm = num;
+                }
+                FieldKind::REG(num) => {
+                    rs1 = num;
+                }
             }
-            FieldKind::REG(num) => {
-                rs2 = num;
+        }
+
+        if inst.field3 != "" {
+            match self.encode_field(&inst.field3) {
+                FieldKind::IMM(num) => {
+                    imm = num;
+                }
+                FieldKind::REG(num) => {
+                    rs2 = num;
+                }
             }
         }
 
