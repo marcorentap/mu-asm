@@ -26,12 +26,15 @@ fn main() -> io::Result<()> {
     let cli = Cli::parse();
     let mut mu_asm = MuAsm::new();
 
-    let mut reader: Box<dyn BufRead> = match cli.input_file {
+    let mut reader: BufReader<Box<dyn Read>> = match cli.input_file {
         Some(input_file) => {
             let file = File::open(input_file)?;
-            Box::new(BufReader::new(file))
+            BufReader::new(Box::new(file))
         }
-        None => Box::new(BufReader::new(io::stdin())),
+        None => {
+            let io = io::stdin();
+            BufReader::new(Box::new(io))
+        }
     };
 
     let mut writer: Box<dyn Write> = match cli.output_file {
